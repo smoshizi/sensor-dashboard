@@ -22,6 +22,23 @@ function SensorPlot({ title, data }) {
   const minTime = now - WINDOW_MS;
   const chartData = (data || []).filter(d => d.time >= minTime && d.time <= now);
 
+  // Calculate min/max for Y-axis (with a little margin)
+  let minY = 0, maxY = 1;
+  if (chartData.length > 0) {
+    minY = Math.min(...chartData.map(d => d.value));
+    maxY = Math.max(...chartData.map(d => d.value));
+    if (minY === maxY) {
+      // All points are the same, expand range for visibility
+      minY -= 1;
+      maxY += 1;
+    } else {
+      // Add a 5% margin for better visualization
+      const margin = (maxY - minY) * 0.05;
+      minY -= margin;
+      maxY += margin;
+    }
+  }
+
   return (
     <div style={{
       width: 480,
@@ -36,7 +53,7 @@ function SensorPlot({ title, data }) {
 		<ResponsiveContainer width="100%" height={230}>
 		  <LineChart
 			data={chartData}
-			margin={{ top: 10, right: 5, left: 0, bottom: 10 }} // Increased margins
+			margin={{ top: 10, right: 5, left: 0, bottom: 10 }}
 		  >
 			<CartesianGrid strokeDasharray="3 3" />
 			<XAxis
@@ -49,12 +66,13 @@ function SensorPlot({ title, data }) {
 			>
 			  <Label
 				value="Time (hh:mm:ss)"
-				offset={-10} // Positive value, pushes label below axis values
+				offset={-10}
 				position="insideBottom"
 				style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
 			  />
 			</XAxis>
 			<YAxis
+			  domain={[minY, maxY]}
 			  tick={{ fontSize: 14 }}
 			>
 			  <Label
