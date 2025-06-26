@@ -11,7 +11,7 @@ function formatTime(ms) {
 function SensorPlot({ title, data }) {
   const [now, setNow] = useState(Date.now());
 
-  // Update "now" every 10ms to keep the window sliding
+  // Update "now" every second to keep the window sliding
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 10);
     return () => clearInterval(interval);
@@ -21,23 +21,6 @@ function SensorPlot({ title, data }) {
   const WINDOW_MS = 20000;
   const minTime = now - WINDOW_MS;
   const chartData = (data || []).filter(d => d.time >= minTime && d.time <= now);
-
-  // Calculate min/max for Y-axis with a margin, based on the actual sensor data
-  let minY = 0, maxY = 1;
-  if (chartData.length > 0) {
-    minY = Math.min(...chartData.map(d => d.value));
-    maxY = Math.max(...chartData.map(d => d.value));
-    if (minY === maxY) {
-      // All points are the same, expand range for visibility
-      minY -= 1;
-      maxY += 1;
-    } else {
-      // Add a 5% margin for better visualization
-      const margin = (maxY - minY) * 0.05;
-      minY -= margin;
-      maxY += margin;
-    }
-  }
 
   return (
     <div style={{
@@ -72,7 +55,6 @@ function SensorPlot({ title, data }) {
             />
           </XAxis>
           <YAxis
-            domain={[minY, maxY]}
             tick={{ fontSize: 14 }}
           >
             <Label
@@ -83,14 +65,7 @@ function SensorPlot({ title, data }) {
             />
           </YAxis>
           <Tooltip labelFormatter={formatTime} />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#0000ff"
-            dot={false}
-            isAnimationActive={false}
-            strokeWidth={2.5}
-          />
+          <Line type="monotone" dataKey="value" stroke="#0000ff" dot={false} isAnimationActive={false} strokeWidth={2.5} />
         </LineChart>
       </ResponsiveContainer>
     </div>
