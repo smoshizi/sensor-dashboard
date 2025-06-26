@@ -54,21 +54,39 @@ function SensorPlot({ title, data }) {
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </XAxis>
-          <YAxis
-            tick={{ fontSize: 14 }}
-            tickFormatter={value => value.toFixed(2)} // Show 2 decimal places on Y axis
-          >
-            <Label
-              value="Sensor output (mV)"
-              angle={-90}
-              position="insideLeft"
-              style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
-            />
-          </YAxis>
-          <Tooltip 
-            labelFormatter={formatTime}
-            formatter={(value) => value.toFixed(2)} // Show 2 decimal places in tooltip
-          />
+			<YAxis
+			  tick={{ fontSize: 14 }}
+			  tickFormatter={value => {
+				// Show two decimals for numbers >= 1
+				// Use up to 4 significant digits in scientific notation for very small numbers
+				if (Math.abs(value) >= 1) {
+				  return value.toFixed(2);
+				} else if (Math.abs(value) > 0) {
+				  return value.toExponential(2); // e.g. 9.76e-3 for 0.00976
+				} else {
+				  return "0";
+				}
+			  }}
+			>
+			  <Label
+				value="Sensor output (mV)"
+				angle={-90}
+				position="insideLeft"
+				style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
+			  />
+			</YAxis>
+			<Tooltip
+			  labelFormatter={formatTime}
+			  formatter={value => {
+				if (Math.abs(value) >= 1) {
+				  return value.toFixed(2);
+				} else if (Math.abs(value) > 0) {
+				  return value.toExponential(2);
+				} else {
+				  return "0";
+				}
+			  }}
+			/>
           <Line
             type="monotone"
             dataKey="value"
