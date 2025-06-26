@@ -56,7 +56,7 @@ function SensorPlot({ title, data }) {
           </XAxis>
           <YAxis
             tick={{ fontSize: 14 }}
-            tickFormatter={value => value.toFixed(2)} // 2 decimal places
+            tickFormatter={value => value.toFixed(2)} // Show 2 decimal places on Y axis
           >
             <Label
               value="Sensor output (mV)"
@@ -65,7 +65,10 @@ function SensorPlot({ title, data }) {
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </YAxis>
-          <Tooltip labelFormatter={formatTime} />
+          <Tooltip 
+            labelFormatter={formatTime}
+            formatter={(value) => value.toFixed(2)} // Show 2 decimal places in tooltip
+          />
           <Line
             type="monotone"
             dataKey="value"
