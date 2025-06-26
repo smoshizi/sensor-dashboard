@@ -20,21 +20,22 @@ function SensorPlot({ title, data }) {
   const minTime = now - WINDOW_MS;
   const chartData = (data || []).filter(d => d.time >= minTime && d.time <= now);
 
-  // Calculate min/max for Y-axis
-  let minY = 0, maxY = 20;
+  // Calculate min/max for Y-axis and align to 0.5 mV steps
+  let minY = 0, maxY = 10;
   if (chartData.length > 0) {
-    minY = Math.floor(Math.min(...chartData.map(d => d.value)));
-    maxY = Math.ceil(Math.max(...chartData.map(d => d.value)));
+    minY = Math.floor(Math.min(...chartData.map(d => d.value)) * 2) / 2;
+    maxY = Math.ceil(Math.max(...chartData.map(d => d.value)) * 2) / 2;
     if (minY === maxY) {
-      minY -= 1;
-      maxY += 1;
+      minY -= 0.5;
+      maxY += 0.5;
     }
   }
 
-  // Generate ticks every 2 units between minY and maxY
+  // Generate ticks with 0.5 mV steps, rounded to two decimals
   const ticks = [];
-  for (let t = minY; t <= maxY; t += 2) {
-    ticks.push(t);
+  for (let t = minY; t <= maxY + 1e-9; t += 0.5) {
+    // Fix floating point precision issues
+    ticks.push(Number(t.toFixed(2)));
   }
 
   return (
