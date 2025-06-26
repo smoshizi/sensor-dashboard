@@ -5,22 +5,37 @@ import {
 
 function formatTime(ms) {
   const date = new Date(ms);
-  return date.toLocaleTimeString('en-US', { hour12: false }); // "21:04:15"
+  return date.toLocaleTimeString('en-US', { hour12: false });
 }
 
 function SensorPlot({ title, data }) {
   const [now, setNow] = useState(Date.now());
 
-  // Update "now" every 10ms to keep the window sliding
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 10);
     return () => clearInterval(interval);
   }, []);
 
-  // Filter data for the last 20 seconds
   const WINDOW_MS = 20000;
   const minTime = now - WINDOW_MS;
   const chartData = (data || []).filter(d => d.time >= minTime && d.time <= now);
+
+  // Calculate min/max for Y-axis
+  let minY = 0, maxY = 20;
+  if (chartData.length > 0) {
+    minY = Math.floor(Math.min(...chartData.map(d => d.value)));
+    maxY = Math.ceil(Math.max(...chartData.map(d => d.value)));
+    if (minY === maxY) {
+      minY -= 1;
+      maxY += 1;
+    }
+  }
+
+  // Generate ticks every 2 units between minY and maxY
+  const ticks = [];
+  for (let t = minY; t <= maxY; t += 2) {
+    ticks.push(t);
+  }
 
   return (
     <div style={{
@@ -54,39 +69,23 @@ function SensorPlot({ title, data }) {
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </XAxis>
-			<YAxis
-			  tick={{ fontSize: 14 }}
-			  tickFormatter={value => {
-				// Show two decimals for numbers >= 1
-				// Use up to 4 significant digits in scientific notation for very small numbers
-				if (Math.abs(value) >= 1) {
-				  return value.toFixed(2);
-				} else if (Math.abs(value) > 0) {
-				  return value.toExponential(2); // e.g. 9.76e-3 for 0.00976
-				} else {
-				  return "0";
-				}
-			  }}
-			>
-			  <Label
-				value="Sensor output (mV)"
-				angle={-90}
-				position="insideLeft"
-				style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
-			  />
-			</YAxis>
-			<Tooltip
-			  labelFormatter={formatTime}
-			  formatter={value => {
-				if (Math.abs(value) >= 1) {
-				  return value.toFixed(2);
-				} else if (Math.abs(value) > 0) {
-				  return value.toExponential(2);
-				} else {
-				  return "0";
-				}
-			  }}
-			/>
+          <YAxis
+            tick={{ fontSize: 14 }}
+            domain={[minY, maxY]}
+            ticks={ticks}
+            tickFormatter={value => value.toFixed(2)}
+          >
+            <Label
+              value="Sensor output (mV)"
+              angle={-90}
+              position="insideLeft"
+              style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
+            />
+          </YAxis>
+          <Tooltip
+            labelFormatter={formatTime}
+            formatter={value => value.toFixed(2)}
+          />
           <Line
             type="monotone"
             dataKey="value"
