@@ -25,28 +25,30 @@ function App() {
       });
     };
 
-	const handleMessage = (topic, message) => {
-	  if (topic === 'iot/piezo') {
-		try {
-		  const data = JSON.parse(message.toString());
-		  setPiezo(old => {
-			const updated = { ...old };
-			const now = Date.now();
-			const SAMPLE_INTERVAL_MS = 10; // 100 Hz
-			Object.keys(data).forEach(sensor => {
-			  const arr = Array.isArray(data[sensor]) ? data[sensor] : [data[sensor]];
-			  const oldArr = old[sensor] || [];
-			  // Spread timestamps over the batch
-			  const newPoints = arr.map((v, i) => ({ time: now - (arr.length - 1 - i) * SAMPLE_INTERVAL_MS, value: v }));
-			  const combined = [...oldArr, ...newPoints].filter(d => now - d.time <= WINDOW_MS);
-			  updated[sensor] = combined;
-			});
-			return updated;
-		  });
-		} catch (e) {
-		  console.error('Error parsing piezo:', e);
-		}
-	  }
+    const handleMessage = (topic, message) => {
+      if (topic === 'iot/piezo') {
+        try {
+          const data = JSON.parse(message.toString());
+          setPiezo(old => {
+            const updated = { ...old };
+            const now = Date.now();
+            Object.keys(data).forEach(sensor => {
+              const arr = Array.isArray(data[sensor]) ? data[sensor] : [data[sensor]];
+              const oldArr = old[sensor] || [];
+              // Extract .ts and .v from each sample object
+              const newPoints = arr.map(obj =>
+                ({ time: typeof obj.ts === "number" ? obj.ts : now, value: obj.v })
+              );
+              // Keep only points within the window
+              const combined = [...oldArr, ...newPoints].filter(d => now - d.time <= WINDOW_MS);
+              updated[sensor] = combined;
+            });
+            return updated;
+          });
+        } catch (e) {
+          console.error('Error parsing piezo:', e);
+        }
+      }
       if (topic === 'iot/temp') {
         try {
           const data = JSON.parse(message.toString());
