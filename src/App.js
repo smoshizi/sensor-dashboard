@@ -29,9 +29,19 @@ function App() {
       if (topic === 'iot/piezo') {
         try {
           const data = JSON.parse(message.toString());
+
+          // --- Lag Diagnosis Logging ---
+          const now = Date.now();
+          const firstTs = data.Sensor1?.[0]?.ts;
+          if (typeof firstTs === "number") {
+            console.log("Sensor1 first ts:", firstTs, "Now:", now, "Difference (ms):", now - firstTs);
+          } else {
+            console.log("Sensor1 first ts is missing or invalid.");
+          }
+          // -----------------------------
+
           setPiezo(old => {
             const updated = { ...old };
-            const now = Date.now();
             Object.keys(data).forEach(sensor => {
               const arr = Array.isArray(data[sensor]) ? data[sensor] : [data[sensor]];
               const oldArr = old[sensor] || [];
