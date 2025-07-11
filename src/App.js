@@ -26,6 +26,9 @@ function App() {
     };
 
     const handleMessage = (topic, message) => {
+      // Log every incoming message for debugging
+      console.log("MQTT message received", topic, message.toString());
+
       if (topic === 'iot/piezo') {
         try {
           const data = JSON.parse(message.toString());
