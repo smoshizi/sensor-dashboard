@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import client from './mqttService';
 import SensorPlot from './SensorPlot'; // Your existing chart component
 import Gauge from './Gauge';           // Your existing gauge component
@@ -8,8 +8,13 @@ function App() {
   const [temp, setTemp] = useState(0);
   const [hum, setHum] = useState(0);
 
+  // Keep a running average offset (device time - browser time)
+  const offsetRef = useRef(0);
+  const offsetSamples = useRef([]);
+
   useEffect(() => {
     const WINDOW_MS = 20000; // 20 seconds
+    const OFFSET_SAMPLE_SIZE = 20; // Number of samples to average for offset
 
     const handleConnect = () => {
       console.log('MQTT connected!');
@@ -27,33 +32,45 @@ function App() {
 
     const handleMessage = (topic, message) => {
       // Log every incoming message for debugging
-      console.log("MQTT message received", topic, message.toString());
+      // console.log("MQTT message received", topic, message.toString());
 
       if (topic === 'iot/piezo') {
         try {
           const data = JSON.parse(message.toString());
-
-          // --- Lag Diagnosis Logging ---
           const now = Date.now();
           const firstTs = data.Sensor1?.[0]?.ts;
+
+          // --- Offset calculation ---
           if (typeof firstTs === "number") {
-            console.log("Sensor1 first ts:", firstTs, "Now:", now, "Difference (ms):", now - firstTs);
-          } else {
-            console.log("Sensor1 first ts is missing or invalid.");
+            const sampleOffset = firstTs - now;
+            offsetSamples.current.push(sampleOffset);
+            if (offsetSamples.current.length > OFFSET_SAMPLE_SIZE) {
+              offsetSamples.current.shift();
+            }
+            // Compute average offset
+            const avgOffset = offsetSamples.current.reduce((a, b) => a + b, 0) / offsetSamples.current.length;
+            offsetRef.current = avgOffset;
+            // Uncomment for debugging:
+            // console.log("Avg offset (device-browser, ms):", avgOffset);
           }
-          // -----------------------------
+          // --------------------------
 
           setPiezo(old => {
             const updated = { ...old };
+            const offset = offsetRef.current;
+            const browserNow = Date.now();
             Object.keys(data).forEach(sensor => {
               const arr = Array.isArray(data[sensor]) ? data[sensor] : [data[sensor]];
               const oldArr = old[sensor] || [];
-              // Extract .ts and .v from each sample object
+              // Shift all incoming data by the running average offset
               const newPoints = arr.map(obj =>
-                ({ time: typeof obj.ts === "number" ? obj.ts : now, value: obj.v })
+                ({
+                  time: typeof obj.ts === "number" ? obj.ts - offset : browserNow,
+                  value: obj.v
+                })
               );
-              // Keep only points within the window
-              const combined = [...oldArr, ...newPoints].filter(d => now - d.time <= WINDOW_MS);
+              // Keep only points within the window (relative to browser time)
+              const combined = [...oldArr, ...newPoints].filter(d => browserNow - d.time <= WINDOW_MS);
               updated[sensor] = combined;
             });
             return updated;
