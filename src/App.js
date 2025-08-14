@@ -105,7 +105,6 @@ function App() {
 	  ))}
 	</div>
 
-
       <div style={{ display: 'flex', gap: 80, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}>
         <Gauge value={temp} label="Temperature (°C)" min={-20} max={60} />
         <Gauge value={hum} label="Humidity (%)" min={0} max={100} />
