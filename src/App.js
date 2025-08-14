@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import client from './mqttService';
 import SensorPlot from './SensorPlot'; // existing chart component
 import Gauge from './Gauge';           // existing gauge component
+import './App.css';
 
 const SENSOR_COUNT = 8;
 const SENSOR_KEYS = Array.from({ length: SENSOR_COUNT }, (_, i) => `Sensor${i + 1}`);
@@ -97,18 +98,13 @@ function App() {
     <div style={{ padding: 32 }}>
       <h1>IoT Sensor Dashboard</h1>
 
-      {/* 8 sensor plots in a responsive grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 24
-        }}
-      >
-        {SENSOR_KEYS.map((key, idx) => (
-          <SensorPlot key={key} title={`Sensor ${idx + 1}`} data={piezo[key] || []} />
-        ))}
-      </div>
+	{/* 8 sensor plots in a 4×2 grid */}
+	<div className="plots-grid">
+	  {SENSOR_KEYS.map((key, idx) => (
+		<SensorPlot key={key} title={`Sensor ${idx + 1}`} data={piezo[key] || []} />
+	  ))}
+	</div>
+
 
       <div style={{ display: 'flex', gap: 80, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}>
         <Gauge value={temp} label="Temperature (°C)" min={-20} max={60} />
