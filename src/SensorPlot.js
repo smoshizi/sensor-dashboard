@@ -20,41 +20,34 @@ function SensorPlot({ title, data }) {
   const minTime = now - WINDOW_MS;
   const chartData = (data || []).filter(d => d.time >= minTime && d.time <= now);
 
-  // Calculate min/max for Y-axis and align to 0.5 mV steps
+  // Y-axis range (0.5 mV steps)
   let minY = 0, maxY = 10;
   if (chartData.length > 0) {
     minY = Math.floor(Math.min(...chartData.map(d => d.value)) * 2) / 2;
     maxY = Math.ceil(Math.max(...chartData.map(d => d.value)) * 2) / 2;
-    if (minY === maxY) {
-      minY -= 0.5;
-      maxY += 0.5;
-    }
+    if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
   }
-
-  // Generate ticks with 0.5 mV steps, rounded to two decimals
   const ticks = [];
-  for (let t = minY; t <= maxY + 1e-9; t += 0.5) {
-    // Fix floating point precision issues
-    ticks.push(Number(t.toFixed(2)));
-  }
+  for (let t = minY; t <= maxY + 1e-9; t += 0.5) ticks.push(Number(t.toFixed(2)));
 
   return (
     <div style={{
-      width: 480,
+      width: '100%',             // fill grid cell
       height: 300,
       background: '#fff',
       padding: 18,
       borderRadius: 12,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      margin: 8
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
     }}>
       <h3 style={{ textAlign: 'center', margin: 0, marginBottom: 8 }}>{title}</h3>
+
       <ResponsiveContainer width="100%" height={230}>
         <LineChart
           data={chartData}
-          margin={{ top: 10, right: 5, left: 0, bottom: 10 }}
+          margin={{ top: 10, right: 12, left: 90, bottom: 18 }}  // more room left for label
         >
           <CartesianGrid strokeDasharray="3 3" />
+
           <XAxis
             dataKey="time"
             type="number"
@@ -62,31 +55,34 @@ function SensorPlot({ title, data }) {
             tickFormatter={formatTime}
             interval="preserveStartEnd"
             tick={{ fontSize: 14 }}
+            tickMargin={8}
           >
             <Label
               value="Time (hh:mm:ss)"
-              offset={-10}
+              offset={-8}
               position="insideBottom"
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </XAxis>
+
           <YAxis
-            tick={{ fontSize: 14 }}
             domain={[minY, maxY]}
             ticks={ticks}
-            tickFormatter={value => value.toFixed(2)}
+            tickFormatter={v => v.toFixed(2)}
+            tick={{ fontSize: 14 }}
+            tickMargin={10}                 // gap between ticks and axis line
           >
             <Label
               value="Sensor output (mV)"
               angle={-90}
-              position="insideLeft"
+              position="left"               // place title outside the chart
+              offset={12}                    // gap between title and tick labels
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </YAxis>
-          <Tooltip
-            labelFormatter={formatTime}
-            formatter={value => value.toFixed(2)}
-          />
+
+          <Tooltip labelFormatter={formatTime} formatter={v => Number(v).toFixed(2)} />
+
           <Line
             type="monotone"
             dataKey="value"
