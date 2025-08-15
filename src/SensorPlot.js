@@ -91,4 +91,11 @@ export default function SensorPlot({ title, data }) {
               />
             </YAxis>
 
-            <Tooltip
+            <Tooltip labelFormatter={formatTime} formatter={v => Number(v).toFixed(2)} />
+            <Line type="monotone" dataKey="value" stroke="#0000ff" dot={false} isAnimationActive={false} strokeWidth={2.2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
