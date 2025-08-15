@@ -31,7 +31,7 @@ function SensorPlot({ title, data }) {
 
   // --- Layout constants to make the chart fill the card ---
   const CARD_H   = 300;         // total card height
-  const PAD      = 12;          // card padding
+  const PAD      = 8;          // card padding
   const TITLE_H  = 28;          // approx h3 height
   const CHART_H  = CARD_H - PAD*2 - TITLE_H; // remaining space for chart
 
