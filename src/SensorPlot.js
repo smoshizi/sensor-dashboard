@@ -30,9 +30,9 @@ function SensorPlot({ title, data }) {
   const ticks = [];
   for (let t = minY; t <= maxY + 1e-9; t += 0.5) ticks.push(Number(t.toFixed(2)));
 
-  return (
+	return (
     <div style={{
-      width: '100%',             // fill grid cell
+      width: '100%',
       height: 300,
       background: '#fff',
       padding: 18,
@@ -44,7 +44,8 @@ function SensorPlot({ title, data }) {
       <ResponsiveContainer width="100%" height={230}>
         <LineChart
           data={chartData}
-          margin={{ top: 10, right: 12, left: 90, bottom: 18 }}  // more room left for label
+          // ↓ less left margin now that the label is inside
+          margin={{ top: 10, right: 12, left: 60, bottom: 18 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
 
@@ -70,13 +71,13 @@ function SensorPlot({ title, data }) {
             ticks={ticks}
             tickFormatter={v => v.toFixed(2)}
             tick={{ fontSize: 14 }}
-            tickMargin={10}                 // gap between ticks and axis line
+            tickMargin={10}               // small gap between ticks and axis line
           >
             <Label
               value="Sensor output (mV)"
               angle={-90}
-              position="left"               // place title outside the chart
-              offset={12}                    // gap between title and tick labels
+              position="insideLeft"       // ← put title inside the plot
+              offset={10}                  // ← gap between title and tick labels
               style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
             />
           </YAxis>
