@@ -32,7 +32,7 @@ export default function SensorPlot({ title, data }) {
   const CARD_H = 300;
   const CARD_PAD = 12;                     // overall padding
   const LEFT_MARGIN = 16;                  // tiny gap between plot area & card border
-  const LABEL_BORDER_GAP = 5;              // how close label sits to the card border
+  const LABEL_BORDER_GAP = 8;              // how close label sits to the card border
 
   return (
     <div style={{
@@ -69,7 +69,7 @@ export default function SensorPlot({ title, data }) {
               <Label
                 value="Time (hh:mm:ss)"
                 position="insideBottom"
-                offset={-10}
+                offset={-16}
                 style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
               />
             </XAxis>
