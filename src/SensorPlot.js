@@ -4,11 +4,10 @@ import {
 } from 'recharts';
 
 function formatTime(ms) {
-  const d = new Date(ms);
-  return d.toLocaleTimeString('en-US', { hour12: false });
+  return new Date(ms).toLocaleTimeString('en-US', { hour12: false });
 }
 
-function SensorPlot({ title, data }) {
+export default function SensorPlot({ title, data }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 10);
@@ -29,80 +28,67 @@ function SensorPlot({ title, data }) {
   const ticks = [];
   for (let t = minY; t <= maxY + 1e-9; t += 0.5) ticks.push(Number(t.toFixed(2)));
 
-  // --- Layout constants to make the chart fill the card ---
-  const CARD_H   = 300;         // total card height
-  const PAD      = 8;          // card padding
-  const TITLE_H  = 28;          // approx h3 height
-  const CHART_H  = CARD_H - PAD*2 - TITLE_H; // remaining space for chart
+  // ---- Layout knobs ----
+  const CARD_H = 300;
+  const CARD_PAD = 12;                     // overall padding
+  const LEFT_MARGIN = 16;                  // tiny gap between plot area & card border
+  const LABEL_BORDER_GAP = 4;              // how close label sits to the card border
 
   return (
     <div style={{
       width: '100%',
       height: CARD_H,
+      padding: CARD_PAD,
       background: '#fff',
-      padding: PAD,
       borderRadius: 12,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      {/* keep title close to top margin */}
+      {/* keep title close to the top edge */}
       <h3 style={{ margin: '0 0 6px 0', textAlign: 'center' }}>{title}</h3>
 
-      {/* stretch chart to fill the card */}
-      <ResponsiveContainer width="100%" height={CHART_H}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 4, right: 8, left: 56, bottom: 24 }}  // tighter margins
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-
-          <XAxis
-            dataKey="time"
-            type="number"
-            domain={[minTime, now]}
-            tickFormatter={formatTime}
-            interval="preserveStartEnd"
-            tick={{ fontSize: 14 }}
-            tickMargin={8}
+      {/* chart fills all remaining space */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 4, right: 8, left: LEFT_MARGIN, bottom: 24 }}
           >
-            <Label
-              value="Time (hh:mm:ss)"
-              position="insideBottom"
-              offset={-6}
-              style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
-            />
-          </XAxis>
+            <CartesianGrid strokeDasharray="3 3" />
 
-          <YAxis
-            domain={[minY, maxY]}
-            ticks={ticks}
-            tickFormatter={v => v.toFixed(2)}
-            tick={{ fontSize: 14 }}
-            tickMargin={10}                 // space between ticks and axis line
-          >
-            {/* Put title inside the plot, but push it LEFT to create a gap from tick values */}
-            <Label
-              value="Sensor output (mV)"
-              angle={-90}
-              position="insideLeft"
-              offset={-12}                   // negative = move title left (more gap from ticks)
-              style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
-            />
-          </YAxis>
+            <XAxis
+              dataKey="time"
+              type="number"
+              domain={[minTime, now]}
+              tickFormatter={formatTime}
+              interval="preserveStartEnd"
+              tick={{ fontSize: 14 }}
+              tickMargin={8}
+            >
+              <Label
+                value="Time (hh:mm:ss)"
+                position="insideBottom"
+                offset={-8}
+                style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
+              />
+            </XAxis>
 
-          <Tooltip labelFormatter={formatTime} formatter={v => Number(v).toFixed(2)} />
+            <YAxis
+              domain={[minY, maxY]}
+              ticks={ticks}
+              tickFormatter={v => v.toFixed(2)}
+              tick={{ fontSize: 14 }}
+              tickMargin={10}                         // gap between tick numbers and axis line
+            >
+              {/* Title inside the plot, pushed LEFT so it's very close to the card edge */}
+              <Label
+                value="Sensor output (mV)"
+                angle={-90}
+                position="insideLeft"
+                offset={-(LEFT_MARGIN - LABEL_BORDER_GAP)} // ~4px from card border
+                style={{ textAnchor: 'middle', fontSize: 16, fill: '#333', fontWeight: 'bold' }}
+              />
+            </YAxis>
 
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#0000ff"
-            dot={false}
-            isAnimationActive={false}
-            strokeWidth={2.2}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-export default SensorPlot;
+            <Tooltip
