@@ -1,13 +1,3 @@
-/* Layout wrapper */
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-}
-
-/* CSS variable controlling the card height for plots.
-   Default is 300px, but media queries below reduce it for smaller screens. */
 :root {
   --card-h: 300px;
 }
@@ -23,27 +13,27 @@
   align-items: stretch;
 }
 
-/* if your SensorPlot root is a card/div, this makes it breathe a bit */
 .plots-grid > * {
   width: 100%;
   min-width: 0;
-  padding: 12px;             /* inner breathing room */
+  padding: 12px;
   box-sizing: border-box;
 }
 
-/* gauges: 2×2 grid under plots */
+/* gauges: single row (4 across) under plots on wide screens */
 .gauges-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
   gap: 24px;
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px;
   margin: 24px auto 0;
   align-items: start;
   justify-items: center;
 }
 
 /* small card wrapper around each gauge to show title + gauge centered */
+/* Use flexbox so the title + dial are centered and vertically aligned */
 .gauge-card {
   width: 100%;
   max-width: 320px;
@@ -51,12 +41,21 @@
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+}
+
+.gauge-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
 }
 
 /* Reduce visual density on smaller screens:
    - decrease plot card height
-   - slightly reduce padding and font-sizes for a more compact layout
+   - collapse the gauges row to 2 columns and then 1 column
 */
 @media (max-width: 1400px) {
   :root { --card-h: 260px; }
@@ -69,6 +68,7 @@
 @media (max-width: 1000px) {
   :root { --card-h: 220px; }
   .plots-grid { grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 20px; }
+  .gauges-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); gap: 16px; }
   .gauge-card { padding: 12px; max-width: 260px; }
   .gauge-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
 }

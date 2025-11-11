@@ -4,7 +4,6 @@ import SensorPlot from './SensorPlot';
 import Gauge from './Gauge';
 import './App.css';
 
-// Explicit keys for the 16 piezo sensors in the requested naming
 const SENSOR_KEYS = [
   // piezo1 -> Sensor1:A1, Sensor2:B1, Sensor3:C1, Sensor4:A2
   'A1', 'B1', 'C1', 'A2',
@@ -33,7 +32,6 @@ function App() {
     const WINDOW_MS = 20000;        // 20 seconds
     const OFFSET_SAMPLE_SIZE = 20;  // samples for running offset avg
 
-    // per-topic mapping from incoming SensorN to our named keys
     const TOPIC_MAP = {
       'iot/piezo1': ['A1', 'B1', 'C1', 'A2'],
       'iot/piezo2': ['B2', 'C2', 'D1', 'E1'],
@@ -118,8 +116,6 @@ function App() {
         } catch (e) {
           console.error('Error parsing temp message for', topic, e);
         }
-      } else {
-        // ignore other topics
       }
     };
 
@@ -143,23 +139,24 @@ function App() {
         ))}
       </div>
 
-      {/* 2×2 gauges grid */}
-      <div className="gauges-grid">
+      {/* single-row gauges under plots */}
+      <div className="gauges-grid" role="region" aria-label="Gauges">
         <div className="gauge-card">
           <h3>Temperature 1</h3>
-          <Gauge value={temp1} label="Temperature 1" min={-10} max={60} />
+          {/* hideLabel so we don't render the label again under the dial */}
+          <Gauge value={temp1} label="Temperature 1" min={-40} max={60} hideLabel />
         </div>
         <div className="gauge-card">
           <h3>Humidity 1</h3>
-          <Gauge value={hum1} label="Humidity 1" min={0} max={100} />
+          <Gauge value={hum1} label="Humidity 1" min={0} max={100} hideLabel />
         </div>
         <div className="gauge-card">
           <h3>Temperature 2</h3>
-          <Gauge value={temp2} label="Temperature 2" min={-10} max={60} />
+          <Gauge value={temp2} label="Temperature 2" min={-40} max={60} hideLabel />
         </div>
         <div className="gauge-card">
           <h3>Humidity 2</h3>
-          <Gauge value={hum2} label="Humidity 2" min={0} max={100} />
+          <Gauge value={hum2} label="Humidity 2" min={0} max={100} hideLabel />
         </div>
       </div>
     </div>
