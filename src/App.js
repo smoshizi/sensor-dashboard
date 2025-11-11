@@ -1,17 +1,29 @@
 import React, { useEffect, useState, useRef } from 'react';
 import client from './mqttService';
-import SensorPlot from './SensorPlot'; // existing chart component
-import Gauge from './Gauge';           // existing gauge component
+import SensorPlot from './SensorPlot';
+import Gauge from './Gauge';
 import './App.css';
 
-const SENSOR_COUNT = 8;
-const SENSOR_KEYS = Array.from({ length: SENSOR_COUNT }, (_, i) => `Sensor${i + 1}`);
+// Explicit keys for the 16 piezo sensors in the requested naming
+const SENSOR_KEYS = [
+  // piezo1 -> Sensor1:A1, Sensor2:B1, Sensor3:C1, Sensor4:A2
+  'A1', 'B1', 'C1', 'A2',
+  // piezo2 -> Sensor1:B2, Sensor2:C2, Sensor3:D1, Sensor4:E1
+  'B2', 'C2', 'D1', 'E1',
+  // piezo3 -> Sensor1:A3, Sensor2:B3, Sensor3:C3, Sensor4:A4
+  'A3', 'B3', 'C3', 'A4',
+  // piezo4 -> Sensor1:B4, Sensor2:C4, Sensor3:D2, Sensor4:E2
+  'B4', 'C4', 'D2', 'E2'
+];
+
 const makeEmptyState = () => Object.fromEntries(SENSOR_KEYS.map(k => [k, []]));
 
 function App() {
   const [piezo, setPiezo] = useState(makeEmptyState());
-  const [temp, setTemp] = useState(0);
-  const [hum, setHum] = useState(0);
+  const [temp1, setTemp1] = useState(0);
+  const [hum1, setHum1] = useState(0);
+  const [temp2, setTemp2] = useState(0);
+  const [hum2, setHum2] = useState(0);
 
   // Running average offset (device time - browser time)
   const offsetRef = useRef(0);
@@ -21,67 +33,93 @@ function App() {
     const WINDOW_MS = 20000;        // 20 seconds
     const OFFSET_SAMPLE_SIZE = 20;  // samples for running offset avg
 
+    // per-topic mapping from incoming SensorN to our named keys
+    const TOPIC_MAP = {
+      'iot/piezo1': ['A1', 'B1', 'C1', 'A2'],
+      'iot/piezo2': ['B2', 'C2', 'D1', 'E1'],
+      'iot/piezo3': ['A3', 'B3', 'C3', 'A4'],
+      'iot/piezo4': ['B4', 'C4', 'D2', 'E2']
+    };
+
+    const subscribeTopics = [
+      'iot/piezo1',
+      'iot/piezo2',
+      'iot/piezo3',
+      'iot/piezo4',
+      'iot/temp1',
+      'iot/temp2'
+    ];
+
     const handleConnect = () => {
       console.log('MQTT connected!');
-      client.subscribe('iot/piezo', err => { if (err) console.error('Subscribe error iot/piezo:', err); });
-      client.subscribe('iot/temp',  err => { if (err) console.error('Subscribe error iot/temp:', err);  });
+      for (const t of subscribeTopics) {
+        client.subscribe(t, err => {
+          if (err) console.error('Subscribe error', t, err);
+        });
+      }
     };
 
     const handleMessage = (topic, message) => {
-      if (topic === 'iot/piezo') {
+      const browserNow = Date.now();
+
+      if (topic in TOPIC_MAP) {
         try {
           const data = JSON.parse(message.toString());
-          const now = Date.now();
 
-          // Use the earliest timestamp from any present sensor in this batch
-          let firstTs;
-          for (const key of SENSOR_KEYS) {
-            const item = data[key];
-            if (!item) continue;
-            if (Array.isArray(item) && item.length && typeof item[0].ts === 'number') {
-              firstTs = typeof firstTs === 'number' ? Math.min(firstTs, item[0].ts) : item[0].ts;
-            } else if (!Array.isArray(item) && typeof item.ts === 'number') {
-              firstTs = typeof firstTs === 'number' ? Math.min(firstTs, item.ts) : item.ts;
+          // update offset running average if device timestamps exist
+          for (let i = 0; i < 4; i++) {
+            const d = data[`Sensor${i + 1}`];
+            const sample = Array.isArray(d) ? d[0] : d;
+            if (sample && typeof sample.ts === 'number') {
+              const offsetSample = sample.ts - browserNow;
+              offsetSamples.current.push(offsetSample);
+              if (offsetSamples.current.length > OFFSET_SAMPLE_SIZE) {
+                offsetSamples.current.shift();
+              }
+              const avg = offsetSamples.current.reduce((a, b) => a + b, 0) / offsetSamples.current.length;
+              offsetRef.current = avg;
+              break;
             }
           }
-          if (typeof firstTs === 'number') {
-            const sampleOffset = firstTs - now;
-            offsetSamples.current.push(sampleOffset);
-            if (offsetSamples.current.length > OFFSET_SAMPLE_SIZE) offsetSamples.current.shift();
-            offsetRef.current =
-              offsetSamples.current.reduce((a, b) => a + b, 0) / offsetSamples.current.length;
-          }
 
+          const mapping = TOPIC_MAP[topic];
           setPiezo(prev => {
             const updated = { ...prev };
             const offset = offsetRef.current;
-            const browserNow = Date.now();
+            const now = Date.now();
 
-            for (const key of SENSOR_KEYS) {
-              const raw = data[key];
-              const oldArr = prev[key] || [];
+            for (let i = 0; i < mapping.length; i++) {
+              const mappedKey = mapping[i];
+              const raw = data[`Sensor${i + 1}`];
+              const oldArr = prev[mappedKey] || [];
               const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
               const newPoints = arr.map(obj => ({
-                time: typeof obj.ts === 'number' ? obj.ts - offset : browserNow,
+                time: typeof obj.ts === 'number' ? (obj.ts - offset) : now,
                 value: Number(obj.v) || 0
               }));
-              // Keep only points within the window (relative to browser time)
-              const combined = [...oldArr, ...newPoints].filter(d => browserNow - d.time <= WINDOW_MS);
-              updated[key] = combined;
+              const combined = [...oldArr, ...newPoints].filter(d => now - d.time <= WINDOW_MS);
+              updated[mappedKey] = combined;
             }
             return updated;
           });
         } catch (e) {
-          console.error('Error parsing piezo:', e);
+          console.error('Error parsing piezo message for', topic, e);
         }
-      } else if (topic === 'iot/temp') {
+      } else if (topic === 'iot/temp1' || topic === 'iot/temp2') {
         try {
           const data = JSON.parse(message.toString());
-          setTemp(Number(data.Temperature) || 0);
-          setHum(Number(data.Humidity) || 0);
+          if (topic === 'iot/temp1') {
+            setTemp1(Number(data.Temperature) || 0);
+            setHum1(Number(data.Humidity) || 0);
+          } else {
+            setTemp2(Number(data.Temperature) || 0);
+            setHum2(Number(data.Humidity) || 0);
+          }
         } catch (e) {
-          console.error('Error parsing temp:', e);
+          console.error('Error parsing temp message for', topic, e);
         }
+      } else {
+        // ignore other topics
       }
     };
 
@@ -98,16 +136,31 @@ function App() {
     <div style={{ padding: 32 }}>
       <h1>IoT Sensor Dashboard</h1>
 
-	{/* 8 sensor plots in a 4×2 grid */}
-	<div className="plots-grid">
-	  {SENSOR_KEYS.map((key, idx) => (
-		<SensorPlot key={key} title={`Sensor ${idx + 1}`} data={piezo[key] || []} />
-	  ))}
-	</div>
+      {/* 16 sensor plots in a 4×4 grid */}
+      <div className="plots-grid">
+        {SENSOR_KEYS.map((key) => (
+          <SensorPlot key={key} title={key} data={piezo[key] || []} />
+        ))}
+      </div>
 
-      <div style={{ display: 'flex', gap: 80, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}>
-        <Gauge value={temp} label="Temperature (°C)" min={-20} max={60} />
-        <Gauge value={hum} label="Humidity (%)" min={0} max={100} />
+      {/* 2×2 gauges grid */}
+      <div className="gauges-grid">
+        <div className="gauge-card">
+          <h3>Temperature 1</h3>
+          <Gauge value={temp1} label="Temperature 1" min={-10} max={60} />
+        </div>
+        <div className="gauge-card">
+          <h3>Humidity 1</h3>
+          <Gauge value={hum1} label="Humidity 1" min={0} max={100} />
+        </div>
+        <div className="gauge-card">
+          <h3>Temperature 2</h3>
+          <Gauge value={temp2} label="Temperature 2" min={-10} max={60} />
+        </div>
+        <div className="gauge-card">
+          <h3>Humidity 2</h3>
+          <Gauge value={hum2} label="Humidity 2" min={0} max={100} />
+        </div>
       </div>
     </div>
   );

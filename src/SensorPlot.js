@@ -29,7 +29,7 @@ export default function SensorPlot({ title, data }) {
   for (let t = minY; t <= maxY + 1e-9; t += 0.5) ticks.push(Number(t.toFixed(2)));
 
   // ---- Layout knobs ----
-  const CARD_H = 300;
+  // Height is now driven by a CSS variable (--card-h) so visuals can be adjusted responsively in CSS
   const CARD_PAD = 12;                     // overall padding
   const LEFT_MARGIN = 16;                  // tiny gap between plot area & card border
   const LABEL_BORDER_GAP = 8;              // how close label sits to the card border
@@ -37,7 +37,7 @@ export default function SensorPlot({ title, data }) {
   return (
     <div style={{
       width: '100%',
-      height: CARD_H,
+      height: 'var(--card-h, 300px)',
       padding: CARD_PAD,
       background: '#fff',
       borderRadius: 12,
