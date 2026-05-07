@@ -15,6 +15,18 @@ const SENSOR_KEYS = [
   'B4', 'C4', 'D2', 'E2'
 ];
 
+const SENSOR_GAIN = {
+  A1: 5, B1: 5, C1: 3, A2: 2,
+  B2: 5, C2: 0.1, D1: 2, E1: 2,
+  A3: 5, B3: 2, C3: 5, A4: 0.1,
+  B4: 5, C4: 5, D2: 0.1,  E2: 1
+};
+
+function convertMvToMicrostrain(sensorKey, mv) {
+  const gain = SENSOR_GAIN[sensorKey] || 50;
+  return mv * gain;
+}
+
 const makeEmptyState = () => Object.fromEntries(SENSOR_KEYS.map(k => [k, []]));
 
 function App() {
@@ -93,7 +105,7 @@ function App() {
               const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
               const newPoints = arr.map(obj => ({
                 time: typeof obj.ts === 'number' ? (obj.ts - offset) : now,
-                value: Number(obj.v) || 0
+                value: convertMvToMicrostrain(mappedKey, Number(obj.v) || 0)
               }));
               const combined = [...oldArr, ...newPoints].filter(d => now - d.time <= WINDOW_MS);
               updated[mappedKey] = combined;

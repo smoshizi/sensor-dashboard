@@ -26,7 +26,8 @@ export default function SensorPlot({ title, data }) {
     if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
   }
   const ticks = [];
-  for (let t = minY; t <= maxY + 1e-9; t += 0.5) ticks.push(Number(t.toFixed(2)));
+  const tickStep = Math.max(5, Math.ceil((maxY - minY) / 5));
+  for (let t = minY; t <= maxY + 1e-9; t += tickStep) ticks.push(Number(t.toFixed(2)));
 
   // ---- Layout knobs ----
   // Height is now driven by a CSS variable (--card-h) so visuals can be adjusted responsively in CSS
@@ -83,7 +84,7 @@ export default function SensorPlot({ title, data }) {
             >
               {/* Title inside the plot, pushed LEFT so it's very close to the card edge */}
               <Label
-                value="Sensor output (mV)"
+                value="Microstrain (µε)"
                 angle={-90}
                 position="insideLeft"
                 offset={-(LEFT_MARGIN - LABEL_BORDER_GAP)} // ~4px from card border
